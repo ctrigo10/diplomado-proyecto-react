@@ -1,4 +1,4 @@
-import type { ActionState } from '../interaces';
+import type { ActionState } from '../interfaces';
 import { z } from 'zod';
 
 export const createInitialState = <T>(): ActionState<T> => {

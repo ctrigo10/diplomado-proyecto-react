@@ -9,17 +9,21 @@ import {
 } from '@mui/material';
 import { useActionState } from 'react';
 import { schemaLogin, type LoginFormValues } from '../../models/login.model';
-import type { ActionState } from '../../interaces';
+import type { ActionState } from '../../interfaces';
 import { createInitialState, handleZodError } from '../../helpers';
-import { useAlert } from '../../hooks';
+import { useAlert, useAuth, useAxios } from '../../hooks';
+import { Link, useNavigate } from 'react-router-dom';
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+//const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export type LoginActionState = ActionState<LoginFormValues>;
 const initialState = createInitialState<LoginFormValues>();
 
 export const LoginPage = () => {
+  const axios = useAxios();
   const { showAlert } = useAlert();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const loginApi = async (
     _: LoginActionState | undefined,
@@ -31,11 +35,15 @@ export const LoginPage = () => {
     };
     try {
       schemaLogin.parse(rawData);
-      await delay(5000);
-      showAlert('bien')
+      //await delay(5000);
+      const response = await axios.post('/login', rawData);
+      if (!response?.data.token) throw new Error('No token recibido');
+      login(response.data.token, { username: rawData.username });
+      showAlert('Bienvenido', 'success');
+      navigate('/perfil');
     } catch (error) {
       const err = handleZodError<LoginFormValues>(error, rawData);
-      showAlert(err.message, 'error')
+      showAlert(err.message, 'error');
       return err;
     }
   };
@@ -46,7 +54,15 @@ export const LoginPage = () => {
   );
   return (
     <Container component="main" maxWidth="sm">
-      <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          height: '100vh',
+          textAlign: 'center',
+        }}
+      >
         <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
           <Typography component={'h1'} variant="h4" gutterBottom>
             LOGIN
@@ -63,7 +79,7 @@ export const LoginPage = () => {
               name="username"
               required
               fullWidth
-              label="Username"
+              label="usuario"
               type="text"
               autoComplete="username"
               autoFocus
@@ -71,12 +87,13 @@ export const LoginPage = () => {
               error={!!state?.errors.username}
               helperText={!!state?.errors.username}
               disabled={isPending}
+              sx={{ mb: '30px' }}
             />
             <TextField
               name="password"
               required
               fullWidth
-              label="Password"
+              label="Contraseña"
               type="password"
               autoComplete="password"
               autoFocus
@@ -84,6 +101,7 @@ export const LoginPage = () => {
               error={!!state?.errors.password}
               helperText={!!state?.errors.password}
               disabled={isPending}
+              sx={{ mb: '30px' }}
             />
             <Button
               type="submit"
@@ -99,6 +117,7 @@ export const LoginPage = () => {
             >
               {isPending ? 'Logging in...' : 'Login'}
             </Button>
+            <Link to={'/user'}>Registrar nuevo usuario</Link>
           </Box>
         </Paper>
       </Box>
